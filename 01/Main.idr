@@ -105,7 +105,7 @@ main = do
        x ::: xs => do
          let stateComputation : State (List1 Integer) Integer
              stateComputation = findDuplicateSum $ cycle $ x :: xs
-         let result = evalState (0 ::: []) stateComputation
+         let result = evalState (singleton 0) stateComputation
          printLn result
 
   pure ()
