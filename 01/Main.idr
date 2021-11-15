@@ -54,51 +54,58 @@ namespace Input
   input = do
     readResult <- readFile "./input"
     inputString <- case readResult of
-                (Left err) => do
-                  putStrLn $ show err
+                Left err => do
+                  printLn err
                   ?handleFileError
-                (Right x) => pure x
+                Right x => pure x
     tokens <- case lex tokenizer inputString of
                    (x, (EndInput, _)) => pure x
                    (_, stopReason) => do
-                     putStrLn $ show stopReason
+                     printLn stopReason
                      ?handleLexError
     case parse grammar tokens of
-         (Left err) => do
-           --putStrLn $ show err
+         Left err => do
+           --printLn err
            ?handleParseError
-         (Right (result, rest)) => do
-           --putStrLn $ show rest
+         Right (result, rest) => do
+           --printLn rest
            pure result
 
-findDuplicateSumStep : HasIO m => MonadState (List1 Integer) m => Integer -> m (Maybe Integer)
+findDuplicateSumStep : Integer ->
+                       MonadState (List1 Integer) m => m (Maybe Integer)
 findDuplicateSumStep x = do
   oldList <- get
   let lastSum = head oldList
   let newSum = lastSum + x
-  liftIO $ putStrLn $ show newSum
   if newSum `elem` forget oldList
      then pure $ Just newSum
      else do
        put $ newSum `cons` oldList
-       pure $ Nothing
+       pure Nothing
 
-findDuplicateSum : HasIO m => MonadState (List1 Integer) m => Stream Integer -> m ()
+findDuplicateSum : Stream Integer ->
+                   MonadState (List1 Integer) m => m Integer
 findDuplicateSum xs = do
   let x = head xs
   result <- findDuplicateSumStep x
   case result of
        Nothing => findDuplicateSum $ tail xs
-       (Just duplicateSum) => pure ()
+       Just duplicateSum => pure duplicateSum
 
 main : IO ()
 main = do
   frequencyChanges <- Input.input
-  --putStrLn $ show frequencyChanges
-  --putStrLn $ show $ sum frequencyChanges
+  --printLn frequencyChanges
+
+  -- Part 1
+  printLn $ sum frequencyChanges
+
+  -- Part 2
   case frequencyChanges of
-       (x ::: xs) => do
-         let stateComputation : StateT (List1 Integer) IO ()
+       x ::: xs => do
+         let stateComputation : State (List1 Integer) Integer
              stateComputation = findDuplicateSum $ cycle $ x :: xs
-         evalStateT (0 ::: []) stateComputation
+         let result = evalState (0 ::: []) stateComputation
+         printLn result
+
   pure ()
