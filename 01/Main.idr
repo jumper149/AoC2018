@@ -1,5 +1,10 @@
 module Main
 
+import Control.Monad.State
+import Data.List
+import Data.List1
+import Data.Maybe
+import Data.Stream
 import System.File.ReadWrite
 import Text.Bounded
 import Text.Lexer
@@ -41,11 +46,11 @@ namespace Input
   grammarLine : Grammar () Token True Integer
   grammarLine = grammarSign <*> grammarNatural <* grammarNewline
   
-  grammar : Grammar () Token False (List Integer)
-  grammar = manyTill eof grammarLine
+  grammar : Grammar () Token True (List1 Integer)
+  grammar = someTill eof grammarLine
 
   export
-  input : IO (List Integer)
+  input : IO (List1 Integer)
   input = do
     readResult <- readFile "./input"
     inputString <- case readResult of
@@ -66,9 +71,34 @@ namespace Input
            --putStrLn $ show rest
            pure result
 
+findDuplicateSumStep : HasIO m => MonadState (List1 Integer) m => Integer -> m (Maybe Integer)
+findDuplicateSumStep x = do
+  oldList <- get
+  let lastSum = head oldList
+  let newSum = lastSum + x
+  liftIO $ putStrLn $ show newSum
+  if newSum `elem` forget oldList
+     then pure $ Just newSum
+     else do
+       put $ newSum `cons` oldList
+       pure $ Nothing
+
+findDuplicateSum : HasIO m => MonadState (List1 Integer) m => Stream Integer -> m ()
+findDuplicateSum xs = do
+  let x = head xs
+  result <- findDuplicateSumStep x
+  case result of
+       Nothing => findDuplicateSum $ tail xs
+       (Just duplicateSum) => pure ()
+
 main : IO ()
 main = do
   frequencyChanges <- Input.input
   --putStrLn $ show frequencyChanges
-  putStrLn $ show $ sum frequencyChanges
+  --putStrLn $ show $ sum frequencyChanges
+  case frequencyChanges of
+       (x ::: xs) => do
+         let stateComputation : StateT (List1 Integer) IO ()
+             stateComputation = findDuplicateSum $ cycle $ x :: xs
+         evalStateT (0 ::: []) stateComputation
   pure ()
