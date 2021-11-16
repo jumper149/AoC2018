@@ -78,8 +78,39 @@ part1 input = do
   let containsDoubles = filter (2 `elem`) counts
   let containsTriples = filter (3 `elem`) counts
   let result = length containsDoubles * length containsTriples
-  printLn counts
   pure result
+
+differsTimes : Eq a =>
+               List a ->
+               List a ->
+               Nat
+differsTimes [] [] = Z
+differsTimes (x :: xs) (y :: ys) = if x == y
+                                        then differsTimes xs ys
+                                        else S $ differsTimes xs ys
+differsTimes _ _ = ?unequalLengths
+
+differsOnce : Eq a =>
+              List a ->
+              List a ->
+              Bool
+differsOnce xs ys = differsTimes xs ys == 1
+
+predicateCheck : Eq a => (List a, List (List a)) -> Bool
+predicateCheck (x,xs) = any (differsOnce x) xs
+
+withoutDiffering : Eq a => List (List a) -> List a
+withoutDiffering [[], []] = []
+withoutDiffering [x :: xs, y :: ys] = if x == y
+                                         then x :: withoutDiffering [xs, ys]
+                                         else withoutDiffering [xs, ys]
+withoutDiffering _ = ?notTwoDiffering
+
+part2 : Input.InputType -> IO String
+part2 input = do
+  let combinations = (,) <$> forget input <*> pure (forget input)
+  let checking = fst <$> filter predicateCheck combinations
+  pure $ pack $ withoutDiffering checking
 
 main : IO ()
 main = do
@@ -87,5 +118,7 @@ main = do
   --printLn input
 
   printLn =<< part1 input
+
+  putStrLn =<< part2 input
 
   pure ()
