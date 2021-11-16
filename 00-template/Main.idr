@@ -7,13 +7,18 @@ import Text.Parser
 import Text.Parser.Core
 
 namespace Input
+  data Token = TokenNewline
 
-  tokenizer : Tokenizer ?tokenType1
+  tokenizer : Tokenizer Token
+
+  public export
+  InputType : Type
+  InputType = ?inputType
   
-  grammar : Grammar () ?tokenType2 True ?inputType1
+  grammar : Grammar () Token True InputType
 
   export
-  input : IO ?inputType2
+  input : IO InputType
   input = do
     readResult <- readFile "./input"
     inputString <- case readResult of
